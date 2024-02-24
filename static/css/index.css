@@ -1,0 +1,151 @@
+@import url("https://fonts.googleapis.com/css2?family=Quicksand&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap");
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  color: #fff;
+  font-family: "Quicksand", sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 0px;
+}
+
+#body {
+  background-color: #161616;
+  overflow: auto;
+}
+
+#pageContainer {
+  margin-top: 120px;
+  display: flex;
+}
+#leftContainer {
+  position: fixed;
+  width: 25%;
+}
+#userInformation {
+  background-color: #333;
+  margin-left: 30px;
+  border-radius: 7px;
+  /* overflow: auto; */
+  height: 721px;
+  width: 80%;
+}
+
+
+.user-background-image {
+  width: 100%;
+  height: 84px;
+}
+.user-background-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 7px 7px 0px 0px;
+}
+.user-profile-picture {
+  width: 90px;
+  height: 90px;
+  margin-inline: auto;
+  margin-top: -40px;
+}
+
+.user-profile-picture img {
+  width: 100%;
+  height: 100%;
+  background-color: #c9c9c9;
+  padding: 2px;
+  border-radius: 5px;
+}
+
+.user-name {
+  text-align: center;
+  margin-top: 5px;
+}
+
+.user-name h4 {
+  font-size: 1.4rem;
+  color: #fff;
+}
+.user-name p {
+  font-size: 0.9rem;
+  margin-top: -5px;
+  color: #ffffffa8;
+}
+
+.user-information .container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.user-information .container div {
+  margin-inline: 10px;
+  padding-inline: 10px;
+}
+.user-information .container div h6 {
+  font-size: 1.2rem;
+}
+.user-information .container div p {
+  font-size: 0.9rem;
+  margin-top: -5px;
+  color: #ffffffa8;
+}
+.user-followers-information {
+  border-left: 1px solid #ffffff38;
+  border-right: 1px solid #ffffff38;
+}
+.user-recommended-title {
+  margin-inline: 15px;
+  margin-top: 25px;
+  padding-top: 20px;
+  padding-bottom: 10px;
+  border-top: 1px solid #ffffff13;
+  border-bottom: 1px solid #ffffff13;
+}
+
+.user-recommended-title h4 {
+  font-size: 1.2em;
+}
+.recommended-profile-information {
+  width: 100%;
+}
+
+.recommended-people {
+  border: none;
+  margin-top: 5px;
+  margin-bottom: -10px;
+}
+
+.recommended-people:hover {
+  background-color: #3d3d3d;
+}
+.recomended-button-div {
+  width: 100%;
+  border-top: 1px solid #ffffff38;
+  margin-top: 20px;
+}
+.recomended-button-div button {
+  width: 100%;
+  height: 50px;
+  border: none;
+  background-color: #333;
+  color: #00aeff;
+  font-size: 1rem;
+  letter-spacing: 2px;
+}
+
+.mid-container {
+  width: 50%;
+  margin-inline: auto;
+}
+
+#rightContainer {
+  position: fixed;
+  right: 0;
+  width: 25%;
+  overflow: auto;
+  height: calc(100vh - (120px));
+}
