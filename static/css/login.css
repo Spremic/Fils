@@ -43,7 +43,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  background-image: url("/static/img/planet-1702788_1920.jpg");
+  background-image: url("/planet-1702788_1920.jpg");
 }
 
 .image-content h2 {
@@ -112,6 +112,14 @@
 .input input:focus {
   outline: none;
 }
+
+.writeErr {
+  color: red;
+  font-size: 0.95rem;
+  margin-left: 8px;
+
+}
+
 .form-actions {
   display: flex;
   justify-content: space-between;
