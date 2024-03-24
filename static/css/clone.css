@@ -24,6 +24,9 @@ header {
 .header-search {
   width: 50%;
 }
+.redirect-profile {
+  cursor: pointer;
+}
 .header-search .search-input {
   width: 100%;
   display: flex;
@@ -97,6 +100,7 @@ header {
   width: 100%;
   height: 100%;
   border-radius: 50%;
+  object-fit: cover;
 }
 .people-info {
   width: 90%;
@@ -355,6 +359,7 @@ header {
   width: 100%;
   height: 100%;
   border-radius: 50%;
+  object-fit: cover;
 }
 
 .post-status-header .name {
@@ -375,15 +380,10 @@ header {
   margin-left: 53px;
 }
 
-.post-status-felling span {
-  margin-top: -15px;
-  font-size: 0.9rem;
-}
-
 .post-status-felling p {
   font-size: 0.9rem;
   margin-top: -15px;
-  color: #ffffff81;
+  color: #ffffffde;
 }
 
 .post-status-text {
@@ -488,17 +488,7 @@ header {
   margin-left: -11px;
   margin-top: 5px;
 }
-.comments-title h6 {
-  font-size: 1rem;
-  color: #ffffffdc;
-  cursor: pointer;
-  padding-bottom: 1px;
-  width: 121px;
-}
-.comments-title h6:hover {
-  color: #ffffff;
-  border-bottom: 1px solid #adadad;
-}
+
 .post-status-comments-container .comment-container {
   display: flex;
   align-items: center;

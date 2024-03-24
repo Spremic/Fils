@@ -1,7 +1,7 @@
 if (localStorage.getItem("token")) {
   document.location = "/";
 }
-const form = document.querySelector("form");
+const form = document.querySelector("#registerForm");
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   let nameInput = document.querySelector("#name").value.trim();
@@ -29,13 +29,12 @@ form.addEventListener("submit", async (e) => {
       country,
       phone,
       description,
-      img,
     }),
   }).then((response) => response.json());
 
   if (result.status === "ok") {
     localStorage.setItem("token", result.token);
-    document.location = "/ ";
+    document.location = "/complete ";
   } else if (result.status === "validation") {
     let validateErrorsArray = result.validateErrors;
 
