@@ -4,7 +4,6 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
-const postSchema = require("./mongoSchema/post.js");
 const user = require("./mongoSchema/user.js");
 const post = require("./mongoSchema/post.js");
 
@@ -80,7 +79,7 @@ app.post("/api/register", async (req, res) => {
 
   //regex
   let regMail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const regPhone = /^(|\+3\d*)$/;
+  const regPhone = /^(\+3\d*)?$/;
   if (nameInput.length < 3) {
     validateErrors.push("name");
   }
@@ -188,37 +187,11 @@ app.post("/api/login", async (req, res) => {
 });
 
 app.post("/api/dynmicLoad", async (req, res) => {
-  const { token } = req.body;
+  const { cloneToken } = req.body;
 
-  //name, lastname, email, send to front
-  const allNameObject = await user.find({}, { name: 1, _id: 0 });
-  const allName = allNameObject.map((user) => user.name);
-
-  const allLastNameObject = await user.find({}, { lastName: 1, _id: 0 });
-  const allLastName = allLastNameObject.map((user) => user.lastName);
-
-  const allprofilePictureObject = await user.find(
-    {},
-    { profilePicture: 1, _id: 0 }
-  );
-  const allProfilePicture = allprofilePictureObject.map(
-    (user) => user.profilePicture
-  );
-  const base64Images = allProfilePicture.map(
-    (imageBuffer) => `data:image/jpeg;base64,${imageBuffer.toString("base64")}`
-  );
-
-  const allPostNumberObject = await user.find({}, { postsNumber: 1, _id: 0 });
-  const allPostNumber = allPostNumberObject.map((user) => user.postsNumber);
-
-  const allIdsObject = await user.find({}, { _id: 1 });
-  const allIds = allIdsObject.map((user) => user._id);
-
-  //token information
-  const userToken = jwt.verify(token, JWT_SECRET);
-
+  //Registered user
+  const userToken = jwt.verify(cloneToken, JWT_SECRET);
   const _id = userToken.id;
-
   const idCheck = await user.findOne({ _id }).lean();
   const id = idCheck._id;
   const name = idCheck.name;
@@ -231,7 +204,6 @@ app.post("/api/dynmicLoad", async (req, res) => {
   const profilePicture = `data:image/jpeg;base64,${idCheck.profilePicture.toString(
     "base64"
   )}`;
-
   const friends = idCheck.friends;
   const panndingFriends = idCheck.panndingFriends;
   const requestFriends = idCheck.requestFriends;
@@ -241,42 +213,48 @@ app.post("/api/dynmicLoad", async (req, res) => {
   const myPostsID = idCheck.myPostsID;
   const myReactionsID = idCheck.myReactionsID;
 
+  //Recommendeds profiles send to front
+  const lastFourUsers = await user.find({}).sort({ _id: -1 }).limit(4);
+  const lastFourNames = lastFourUsers.map((user) => user.name);
+  const lastFourLastNames = lastFourUsers.map((user) => user.lastName);
+  const lastFourPictures = lastFourUsers.map((user) => {
+    return `data:image/jpeg;base64,${user.profilePicture.toString("base64")}`;
+  });
+  const lastFourPostNumber = lastFourUsers.map((user) => user.postsNumber);
+  const lastFourIds = lastFourUsers.map((user) => user._id);
+
   //search name of friends, mail,chat,id...
   let findEmail = await user.findOne({ email }).lean();
   let friendsArrayEmail = findEmail.friends;
-  let findFriends = await user
-    .find({ email: { $in: friendsArrayEmail } })
-    .lean();
+  let findFriends = await user.find({ _id: { $in: friendsArrayEmail } }).lean();
   let friendsNames = findFriends.map((item) => item.name);
   let friendsLastName = findFriends.map((item) => item.lastName);
   let friendsId = findFriends.map((item) => item._id);
-
-  const searchAllPost = await postSchema.find();
-  const allPost = searchAllPost.map((doc) => {
-     
-    return {
-      id: doc._id,
-      name: doc.name,
-      lastName: doc.lastName,
-      postOwnerImg: `data:image/jpeg;base64,${doc.postOwnerImg.toString(
-        "base64"
-      )}`,
-      postOwnerID: doc.postOwnerID,
-      date: doc.date,
-      felling: doc.felling,
-      description: doc.description,
-      pictureUrl: `data:image/jpeg;base64,${doc.pictureUrl.toString("base64")}`,
-      pictureStyle: doc.pictureStyle,
-      likesNumber: doc.likesNumber,
-      commentsNumber: doc.commentsNumber,
-      commentsName: doc.commentsName,
-      commentsLastName: doc.commentsLastName,
-      commentsProfilePicture: doc.commentsProfilePicture,
-      commentsID: doc.commentsID,
-      comments: doc.comments,
-      commentsDate: doc.commentsDate,
-    };
+  const friendsImg = findFriends.map((item) => {
+    return `data:image/jpeg;base64,${item.profilePicture.toString("base64")}`;
   });
+
+  //all posts info
+  const searchAllPost = await post.find();
+  let postsOwnersIds = searchAllPost.map((item) => item.postOwnerID);
+  const usersSchemaPromises = postsOwnersIds.map((id) => user.findById(id));
+  const usersSchemas = await Promise.all(usersSchemaPromises);
+  const postName = usersSchemas.map((user) => user.name);
+  const postLastName = usersSchemas.map((user) => user.lastName);
+  const postOwnerImg = usersSchemas.map((user) => {
+    return `data:image/jpeg;base64,${user.profilePicture.toString("base64")}`;
+  });
+  const postOwnerID = usersSchemas.map((user) => user._id);
+  const postsIds = searchAllPost.map((post) => post._id);
+  const postDate = searchAllPost.map((post) => post.date);
+  const postFelling = searchAllPost.map((post) => post.felling);
+  const postDescription = searchAllPost.map((post) => post.description);
+  const postPicture = searchAllPost.map((post) => {
+    return `data:image/jpeg;base64,${post.pictureUrl.toString("base64")}`;
+  });
+  const postPictureStyle = searchAllPost.map((post) => post.pictureStyle);
+  const likesNumber = searchAllPost.map((post) => post.likesNumber);
+  const commentsNumber = searchAllPost.map((post) => post.commentsNumber);
 
   //feedback
   return res.json({
@@ -297,18 +275,122 @@ app.post("/api/dynmicLoad", async (req, res) => {
     friendsNumber,
     reactionsNumber,
     myPostsID,
-    allName,
-    allLastName,
-    base64Images,
-    allIds,
-    allPostNumber,
+    lastFourNames,
+    lastFourLastNames,
+    lastFourPictures,
+    lastFourPostNumber,
+    lastFourIds,
     friendsNames,
     friendsLastName,
     friendsId,
-    allPost,
-
+    friendsImg,
     myReactionsID,
+
+    // POSTS
+    postName,
+    postLastName,
+    postOwnerImg,
+    postOwnerID,
+    postDate,
+    postFelling,
+    postDescription,
+    postPicture,
+    likesNumber,
+    commentsNumber,
+    postsIds,
+    postPictureStyle,
   });
+});
+
+app.post("/api/profileDynmicLoad", async (req, res) => {
+  const { cloneToken } = req.body;
+  const userToken = jwt.verify(cloneToken, JWT_SECRET);
+  try {
+    const userSchema = await user.findOne({ _id: userToken.id });
+    const id = userSchema.id;
+    const name = userSchema.name;
+    const lastName = userSchema.lastName;
+    const profilePicture = `data:image/jpeg;base64,${userSchema.profilePicture.toString(
+      "base64"
+    )}`;
+    const postsNumber = userSchema.postsNumber;
+    const friendsNumber = userSchema.friendsNumber;
+    const reactionsNumber = userSchema.reactionsNumber;
+    const description = userSchema.description;
+    const joined = "15.02.2023";
+    const email = userSchema.email;
+    const country = userSchema.country;
+    const phone = userSchema.phone;
+
+    //friends information
+    const friendsId = userSchema.friends;
+    const friendSchema = await user.find({ _id: { $in: friendsId } });
+    const friendsImg = friendSchema.map((friends) => {
+      return `data:image/jpeg;base64,${friends.profilePicture.toString(
+        "base64"
+      )}`;
+    });
+    const friendsNames = friendSchema.map((friends) => friends.name);
+    const friendsLastName = friendSchema.map((friends) => friends.lastName);
+    //posts
+    const postsIds = userSchema.myPostsID;
+    const postsSchemas = await post.find({ _id: { $in: postsIds } });
+    const postOwnerImg = [profilePicture];
+    const postOwnerID = [id];
+    const postName = [name];
+    const postLastName = [lastName];
+    const postDate = postsSchemas.map((post) => post.date);
+    const postFelling = postsSchemas.map((post) => post.felling);
+    const postDescription = postsSchemas.map((post) => post.description);
+    const postPictureStyle = postsSchemas.map((post) => post.pictureStyle);
+    const postPicture = postsSchemas.map((post) => {
+      return `data:image/jpeg;base64,${post.pictureUrl.toString("base64")}`;
+    });
+    const likesNumber = postsSchemas.map((post) => post.likesNumber);
+    const commentsNumber = postsSchemas.map((post) => post.commentsNumber);
+    const myReactionsID = userSchema.myReactionsID;
+
+    return res.json({
+      status: "ok",
+      //user
+      id,
+      name,
+      lastName,
+      profilePicture,
+      postsNumber,
+      friendsNumber,
+      reactionsNumber,
+      description,
+      joined,
+      email,
+      country,
+      phone,
+
+      //friends
+      friendsId,
+      friendsImg,
+      friendsNames,
+      friendsLastName,
+
+      //post
+      postsIds,
+      postsSchemas,
+      postOwnerImg,
+      postOwnerID,
+      postName,
+      postLastName,
+      postDate,
+      postFelling,
+      postDescription,
+      postPictureStyle,
+      postPicture,
+      likesNumber,
+      commentsNumber,
+      myReactionsID,
+    });
+  } catch (err) {
+    console.log(err);
+  }
 });
 app.post("/api/addPost", upload.single("picture"), async function (req, res) {
   let pictureUrl;
@@ -326,7 +408,7 @@ app.post("/api/addPost", upload.single("picture"), async function (req, res) {
   const day = today.getDate().toString().padStart(2, "0");
   const month = (today.getMonth() + 1).toString().padStart(2, "0");
   const year = today.getFullYear().toString();
-  const token = req.body.token;
+  const token = req.body.cloneToken;
   const userToken = jwt.verify(token, JWT_SECRET);
   const _id = userToken.id;
   const idCheck = await user.findOne({ _id }).lean();
@@ -343,7 +425,7 @@ app.post("/api/addPost", upload.single("picture"), async function (req, res) {
 
   try {
     //create schema
-    const response = await postSchema.create({
+    const response = await post.create({
       name,
       lastName,
       postOwnerImg,
@@ -379,10 +461,10 @@ app.post("/api/addPost", upload.single("picture"), async function (req, res) {
 });
 
 app.post("/api/likePost", async (req, res) => {
-  const { id, token } = req.body;
-  const userToken = jwt.verify(token, JWT_SECRET);
+  const { id, cloneToken } = req.body;
+  const userToken = jwt.verify(cloneToken, JWT_SECRET);
   const userProfile = await user.findOne({ _id: userToken.id });
-  const findSchema = await postSchema.findOne({ _id: id });
+  const findSchema = await post.findOne({ _id: id });
 
   try {
     //add post ID to users who likes
@@ -402,7 +484,7 @@ app.post("/api/likePost", async (req, res) => {
     //update post reaction number
     let postReactionNumber = findSchema.likesNumber;
     let newPostReactionNumber = postReactionNumber + 1;
-    const updatePostReactionNumber = await postSchema.updateOne(
+    const updatePostReactionNumber = await post.updateOne(
       { _id: id },
       { $set: { likesNumber: newPostReactionNumber } }
     );
@@ -419,10 +501,10 @@ app.post("/api/likePost", async (req, res) => {
 });
 
 app.post("/api/unlikePost", async (req, res) => {
-  const { token, id } = req.body;
-  const userToken = jwt.verify(token, JWT_SECRET);
+  const { cloneToken, id } = req.body;
+  const userToken = jwt.verify(cloneToken, JWT_SECRET);
   const userProfile = await user.findOne({ _id: userToken.id });
-  const findSchema = await postSchema.findOne({ _id: id });
+  const findSchema = await post.findOne({ _id: id });
 
   try {
     //delete ID to users who likes
@@ -442,7 +524,7 @@ app.post("/api/unlikePost", async (req, res) => {
     //update post reaction number
     let postReactionNumber = findSchema.likesNumber;
     let newPostReactionNumber = postReactionNumber - 1;
-    const updatePostReactionNumber = await postSchema.updateOne(
+    const updatePostReactionNumber = await post.updateOne(
       { _id: id },
       { $set: { likesNumber: newPostReactionNumber } }
     );
@@ -459,45 +541,38 @@ app.post("/api/unlikePost", async (req, res) => {
 });
 
 app.post("/api/addComment", async (req, res) => {
-  const { postID, input, token } = req.body;
+  const { postID, input, cloneToken } = req.body;
   const today = new Date();
   const day = today.getDate().toString().padStart(2, "0");
   const month = (today.getMonth() + 1).toString().padStart(2, "0");
   const year = today.getFullYear().toString();
   const date = `${day}.${month}.${year}.`.trim();
-  const userToken = jwt.verify(token, JWT_SECRET);
+  const userToken = jwt.verify(cloneToken, JWT_SECRET);
   const userSchema = await user.findOne({ _id: userToken.id });
   const userName = userSchema.name;
   const userLastName = userSchema.lastName;
   const userID = userSchema._id;
-  const commentsProfilePicture = `data:image/jpeg;base64,${userSchema.profilePicture.toString(
-    "base64"
-  )}`;
 
-
-  const findPostSchema = await postSchema.findOne({ _id: postID });
+  const findPostSchema = await post.findOne({ _id: postID });
   if (input.trim() === "") {
     return res.json({ status: "validation" });
   }
 
   try {
-    const pushData = await postSchema.updateOne(
+    const pushData = await post.updateOne(
       { _id: postID },
       {
         $push: {
-          commentsName: userName,
-          commentsLastName: userLastName,
           commentsID: userID,
           comments: input,
           commentsDate: date,
-          commentsProfilePicture: commentsProfilePicture,
         },
       }
     );
 
     const commentsNumber = findPostSchema.commentsNumber;
     let newCommentsNumber = commentsNumber + 1;
-    const updateCommentNumber = await postSchema.updateOne(
+    const updateCommentNumber = await post.updateOne(
       { _id: postID },
       { $set: { commentsNumber: newCommentsNumber } }
     );
@@ -516,10 +591,41 @@ app.post("/api/addComment", async (req, res) => {
   }
 });
 
+app.post("/api/loadComments", async (req, res) => {
+  const { postID } = req.body;
+  try {
+    const postSchema = await post.findOne({ _id: postID });
+    const usersIds = postSchema.commentsID;
+    const usersSchemaPromises = usersIds.map((id) => user.findById(id));
+    const usersSchemas = await Promise.all(usersSchemaPromises);
+    const names = usersSchemas.map((user) => user.name);
+    const lastNames = usersSchemas.map((user) => user.lastName);
+    const comments = postSchema.comments;
+    const length = comments.length;
+    const profilePictures = usersSchemas.map((user) => {
+      return `data:image/jpeg;base64,${user.profilePicture.toString("base64")}`;
+    });
+    const date = postSchema.commentsDate;
+    console.log(comments);
+    return res.json({
+      status: "ok",
+      names,
+      lastNames,
+      profilePictures,
+      date,
+      usersIds,
+      comments,
+      length,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
 app.post("/api/addFriend", async (req, res) => {
-  const { token, userID } = req.body;
+  const { cloneToken, userID } = req.body;
   // "USER" is the person who sent the friend request, while "FRIEND" is the person to whom the request was sent.
-  const userToken = jwt.verify(token, JWT_SECRET);
+  const userToken = jwt.verify(cloneToken, JWT_SECRET);
 
   const existingUser = await user.findOne({
     _id: userToken.id,
@@ -547,8 +653,8 @@ app.post("/api/addFriend", async (req, res) => {
 });
 
 app.post("/api/removePaddingFriend", async (req, res) => {
-  const { token, userID } = req.body;
-  const userToken = jwt.verify(token, JWT_SECRET);
+  const { cloneToken, userID } = req.body;
+  const userToken = jwt.verify(cloneToken, JWT_SECRET);
 
   try {
     const removePadding = await user.updateOne(
@@ -567,9 +673,12 @@ app.post("/api/removePaddingFriend", async (req, res) => {
 });
 
 app.post("/api/acceptFriend", async (req, res) => {
-  const { token, userID } = req.body;
-  const userToken = jwt.verify(token, JWT_SECRET);
+  const { cloneToken, userID } = req.body;
+  const userToken = jwt.verify(cloneToken, JWT_SECRET);
   try {
+    const userSchema = await user.findOne({ _id: userToken.id });
+    const friendSchema = await user.findOne({ _id: userID });
+
     const removeRequest = await user.updateOne(
       { _id: userToken.id },
       { $pull: { requestFriends: userID } }
@@ -589,17 +698,35 @@ app.post("/api/acceptFriend", async (req, res) => {
       { _id: userID },
       { $push: { friends: userToken.id } }
     );
-    return res.json({ status: "ok" });
+
+    const friendOldValue = friendSchema.friendsNumber;
+    const friendNewValue = friendOldValue + 1;
+    const updateFriendNumber = await user.updateOne(
+      { _id: userID },
+      { $set: { friendsNumber: friendNewValue } }
+    );
+
+    const userOldValue = userSchema.friendsNumber;
+    const userNewValue = userOldValue + 1;
+    const updateUserValue = await user.updateOne(
+      { _id: userToken.id },
+      { $set: { friendsNumber: userNewValue } }
+    );
+
+    return res.json({ status: "ok", userNewValue });
   } catch (err) {
     console.log(err);
   }
 });
 
 app.post("/api/deleteFriends", async (req, res) => {
-  const { token, userID } = req.body;
-  const userToken = jwt.verify(token, JWT_SECRET);
+  const { cloneToken, userID } = req.body;
+  const userToken = jwt.verify(cloneToken, JWT_SECRET);
 
   try {
+    const userSchema = await user.findOne({ _id: userToken.id });
+    const friendSchema = await user.findOne({ _id: userID });
+
     const removeFriend = await user.updateOne(
       { _id: userToken.id },
       { $pull: { friends: userID } }
@@ -607,10 +734,163 @@ app.post("/api/deleteFriends", async (req, res) => {
 
     const friendRemoveFreind = await user.updateOne(
       { _id: userID },
-      { $pull: { friends: userID } }
+      { $pull: { friends: userToken.id } }
     );
 
+    const friendOldValue = friendSchema.friendsNumber;
+    const friendNewValue = friendOldValue - 1;
+    const updateFriendNumber = await user.updateOne(
+      { _id: userID },
+      { $set: { friendsNumber: friendNewValue } }
+    );
+
+    const userOldValue = userSchema.friendsNumber;
+    const userNewValue = userOldValue - 1;
+    const updateUserValue = await user.updateOne(
+      { _id: userToken.id },
+      { $set: { friendsNumber: userNewValue } }
+    );
+
+    return res.json({ status: "ok", userNewValue });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+app.post("/api/sendAllUsersInfo", async (req, res) => {
+  const { cloneToken } = req.body;
+  const token = jwt.verify(cloneToken, JWT_SECRET);
+  try {
+    const loginUserSchema = await user.findOne({ _id: token.id });
+    const panndingFriends = loginUserSchema.panndingFriends;
+    const requestFriends = loginUserSchema.requestFriends;
+    const friends = loginUserSchema.friends;
+    const usersSchemas = await user.find();
+    const name = usersSchemas.map((users) => users.name);
+    const lastNames = usersSchemas.map((users) => users.lastName);
+    const ids = usersSchemas.map((users) => users._id);
+
+    const profilePictures = usersSchemas.map((users) => {
+      return `data:image/jpeg;base64,${users.profilePicture.toString(
+        "base64"
+      )}`;
+    });
+
+    return res.json({
+      status: "ok",
+      name,
+      lastNames,
+      ids,
+      profilePictures,
+      panndingFriends,
+      requestFriends,
+      friends,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+app.post("/api/editProfileData", async (req, res) => {
+  const {
+    cloneToken,
+    newName,
+    newLastName,
+    newEmail,
+    newPassword,
+    newCountry,
+    newPhone,
+    newAboutMe,
+    confrimPassValue,
+  } = req.body;
+
+  const token = jwt.verify(cloneToken, JWT_SECRET);
+  const userSchema = await user.findOne({ _id: token.id });
+  const pass = userSchema.password;
+  if (confrimPassValue !== pass) {
+    console.log("nije isti");
+    return res.json({ status: "password" });
+  }
+
+  let checkPassword;
+  const regMail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const regPhone = /^(\+3\d*)?$/;
+
+  if (!/^\*+$/.test(newPassword.trim())) {
+    checkPassword = newPassword;
+  } else {
+    checkPassword = pass;
+  }
+
+  if (newName.length < 3) {
+    return;
+  }
+  if (newLastName.length < 3) {
+    return;
+  }
+  if (!regMail.test(newEmail)) {
+    return;
+  }
+  if (!regPhone.test(newPhone)) {
+    return;
+  }
+
+  try {
+    const updateFields = {
+      name: newName,
+      lastName: newLastName,
+      email: newEmail,
+      password: checkPassword,
+      country: newCountry,
+      phone: newPhone,
+      description: newAboutMe,
+    };
+
+    await user.updateOne({ _id: token.id }, { $set: updateFields });
     return res.json({ status: "ok" });
+  } catch (err) {
+    return res.json({ status: "mail" });
+  }
+});
+
+app.post("/api/deleteProfileData", async (req, res) => {
+  const { cloneToken, confrimPassValue } = req.body;
+  const token = jwt.verify(cloneToken, JWT_SECRET);
+  const userSchema = await user.findOne({ _id: token.id });
+  const pass = userSchema.password;
+
+  if (confrimPassValue !== pass) {
+    console.log("nije isti");
+    return res.json({ status: "password" });
+  }
+
+  try {
+    const allFriends = userSchema.friends;
+    const allReactions = userSchema.myReactionsID;
+    const findComments = await post.find({ commentsID: token.id });
+    const postsIds = findComments.map((post) => post._id);
+    const deleteComments = await post.updateMany(
+      { _id: postsIds },
+      { $pull: { commentsID: token.id } }
+    );
+
+    const deleteFriends = await user.updateMany(
+      { _id: allFriends },
+      {
+        $pull: { friends: token.id },
+        $inc: { friendsNumber: -1 },
+      }
+    );
+
+    const deleteReactions = await post.updateMany(
+      { _id: allReactions },
+      { $inc: { likesNumber: -1 } }
+    );
+
+    const deleteUser = await user.deleteOne({ _id: token.id });
+    const deletePost = await post.deleteMany({ postOwnerID: token.id });
+
+    return res.json({ status: "profileDeleted" });
   } catch (err) {
     console.log(err);
   }

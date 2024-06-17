@@ -164,7 +164,7 @@
   display: flex;
 }
 .mid-container {
-  max-width: 555px;
+  width:  555px;
   margin-left: 70px;
   margin-top: 10px;
 }

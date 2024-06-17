@@ -1,3 +1,7 @@
+alert(
+  "The project is under construction, some functionalities are still not working."
+);
+
 if (localStorage.getItem("token")) {
   document.location = "/";
 }
